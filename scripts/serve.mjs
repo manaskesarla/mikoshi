@@ -5,7 +5,7 @@ import { readFile, stat } from "node:fs/promises";
 import { resolve, join, extname, sep } from "node:path";
 import { fileURLToPath } from "node:url";
 
-const TYPES = { ".html": "text/html; charset=utf-8", ".css": "text/css", ".js": "text/javascript", ".json": "application/json", ".png": "image/png", ".svg": "image/svg+xml", ".txt": "text/plain; charset=utf-8", ".pdf": "application/pdf" };
+const TYPES = { ".html": "text/html; charset=utf-8", ".css": "text/css", ".js": "text/javascript", ".mjs": "text/javascript", ".json": "application/json", ".png": "image/png", ".svg": "image/svg+xml", ".txt": "text/plain; charset=utf-8", ".pdf": "application/pdf" };
 
 export function createStaticServer(rootDir) {
   const root = resolve(rootDir);
