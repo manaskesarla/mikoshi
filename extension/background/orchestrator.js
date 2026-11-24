@@ -38,6 +38,7 @@ export function createOrchestrator(deps) {
     const history = [];
     const extracted = {};
     let blocks = 0;
+    let idleSteps = 0;
     let lastSignature = "";
     let step = 0;
 
@@ -147,10 +148,9 @@ export function createOrchestrator(deps) {
       }
 
       if (response.done) return finish("done", { summary: resolveLocally(response.summary ?? "Done.", vault) });
-      if (!progressed) {
-        const stuck = history.slice(-3).every((h) => h.result?.ok === false);
-        if (stuck) return stop("no action made progress", "execute", "failed");
-      }
+      // one fruitless step is normal (the model sees the block/failure in `history` and can adapt); two in a row is stuck
+      idleSteps = progressed ? 0 : idleSteps + 1;
+      if (idleSteps >= 2) return stop("no action made progress", "execute", "failed");
     }
   };
 }
