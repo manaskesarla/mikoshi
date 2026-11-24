@@ -9,6 +9,8 @@
     "bench": "node eval/bench/run.mjs --md docs/results/bench-baseline.md",
     "fetch:vendor": "node scripts/fetch-vendor.mjs",
     "serve:fixtures": "node scripts/serve.mjs fixtures 4173",
-    "browser-check": "node scripts/browser-check.mjs"
+    "browser-check": "node scripts/browser-check.mjs",
+    "e2e": "node scripts/e2e.mjs",
+    "test:server": "server/.venv/bin/python -m pytest -q server/tests"
   }
 }

@@ -60,6 +60,12 @@ def test_mock_follows_the_matching_link_then_extracts_then_answers():
     assert c.done and "30 Nov 2026" in c.summary
 
 
+def test_mock_does_not_answer_from_a_paragraph_that_only_mentions_one_word():
+    home = PORTAL_HOME + [node("p1", tag="p", text="Notices and fee information for students.", state="n/a")]
+    r = run_step(req(home, goal="Tell me the tuition fee due date", mode="read_only"))
+    assert (r.actions[0].action, r.actions[0].targetId) == ("click", "m1")
+
+
 def test_mock_asks_the_user_when_nothing_matches():
     r = run_step(req([node("x", tag="p", text="Welcome", state="n/a")], goal="Find the hostel warden", mode="read_only"))
     assert r.actions[0].action == "ask_user"

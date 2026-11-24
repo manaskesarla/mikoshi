@@ -13,7 +13,7 @@ export const getElement = (id) => registry.get(id) ?? null;
 const MAX_NODES = 300;
 const MAX_TEXT = 200;
 const INTERACTIVE = "input, select, textarea, button, a[href], [role=button], [role=link]";
-const INFORMATIVE = "h1, h2, h3, h4, p, li, td, th, dt, dd, caption, label";
+const INFORMATIVE = "h1, h2, h3, h4, p, li, tr, dt, dd, caption, label"; // a table row is one node: "Tuition fee 12,000 30 Nov 2026"
 const SKIP_INPUT_TYPES = new Set(["hidden", "image"]);
 
 const clip = (t) => String(t ?? "").replace(/\s+/g, " ").trim().slice(0, MAX_TEXT);

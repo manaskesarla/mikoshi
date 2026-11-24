@@ -26,6 +26,8 @@ export async function execute(action, value, win = window) {
   if (a.action === "scroll") { win.scrollBy(0, Math.round(win.innerHeight * 0.8)); return { ok: true }; }
   if (a.action === "done" || a.action === "ask_user" || a.action === "extract") return { ok: true };
 
+  if (a.action === "search") return runSearch(String(a.query ?? ""));
+
   const el = getElement(a.targetId);
   if (!el || !el.isConnected) return { ok: false, error: "element not found on the page any more" };
 
@@ -64,6 +66,19 @@ export async function execute(action, value, win = window) {
   } catch (e) {
     return { ok: false, error: String(e?.message || e).slice(0, 80) };
   }
+}
+
+/** Fill the page's own search box and submit it. */
+function runSearch(query, doc = document) {
+  if (!query.trim()) return { ok: false, error: "empty search query" };
+  const box = doc.querySelector('input[type="search"], [role="search"] input, input[role="searchbox"], input[name="q"], input[name="query"], input[name="search"]');
+  if (!box || box.disabled || box.readOnly) return { ok: false, error: "this page has no search box" };
+  box.focus();
+  setNativeValue(box, query);
+  fire(box, "input"); fire(box, "change");
+  const form = box.form;
+  if (form?.requestSubmit) form.requestSubmit(); else if (form) form.submit(); else return { ok: false, error: "search box is not in a form" };
+  return { ok: true, navigated: true };
 }
 
 /** Text of the given nodes, for `extract`. */

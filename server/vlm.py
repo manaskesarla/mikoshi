@@ -144,7 +144,15 @@ def _mock(req: StepRequest) -> StepResponse:
     if req.extracted:
         summary = " | ".join(f"{k}: {v}" for k, v in req.extracted.items())[:600]
         return StepResponse(actions=[Action(action="done")], done=True, summary=summary, rationale="Collected the requested information.", model="mock")
-    hits = [n for n in nodes if n.text and n.tag not in ("a", "button", "nav") and any(w in n.text.lower() for w in words)]
+    # answer from this page only when some text matches several words of the task; one stray word is not enough
+    need = min(2, len(set(words)))
+    scored = []
+    for n in nodes:
+        if n.text and n.tag not in ("a", "button", "nav"):
+            score = len({w for w in words if w in n.text.lower()})
+            if score >= need:
+                scored.append((score, n))
+    hits = [n for _, n in sorted(scored, key=lambda x: -x[0])]
     if hits:
         return StepResponse(actions=[Action(action="extract", name="result", targetIds=[n.id for n in hits[:3]], reason="matching text on this page")], rationale="The page already shows what was asked for.", model="mock")
     link = next((n for n in nodes if n.href and n.id not in tried and any(w in ((n.text or n.label or "").lower()) for w in words)), None)
