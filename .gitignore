@@ -9,3 +9,4 @@ extension/vendor/*
 !extension/vendor/README.md
 eval/out/
 .pytest_cache/
+!extension/vendor/vendor.lock.json
