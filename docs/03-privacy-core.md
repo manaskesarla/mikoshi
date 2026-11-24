@@ -75,6 +75,7 @@ Tests: unmasked PII is caught; a box drawn too small is grown; clean image passe
 - OCR-garbled digits (O/0, l/1, S/5, split lines).
 - Values split across DOM nodes or across lines.
 - Reformatted values (extra spaces, dashes, fullwidth digits).
+- Partly masked values: if a box hides only some digits of a number, the remainder no longer matches any pattern, so the recheck cannot flag it. Boxes must come from the first pass with padding; the recheck only catches what is still recognisable.
 - Short or common values (a 4-digit PIN) that cannot be detected by pattern and rely on profile exact-match.
 
 Each weak spot gets a named test group, and its measured recall is reported, not hidden (doc 11).
