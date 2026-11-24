@@ -12,7 +12,7 @@ const STRING_FIELDS = ["label", "name", "text", "placeholder", "title", "href", 
 const DROP_FIELDS = ["value", "rawValue", "currentValue"];
 
 export function sanitizeText(input, vault, opts = {}) {
-  const { source = "screen", minConfidence = 0.6 } = opts;
+  const { source = "screen", minConfidence = 0.5 } = opts;
   let text = String(input ?? "");
   if (!text) return { text, hits: [], secrets: 0 };
 

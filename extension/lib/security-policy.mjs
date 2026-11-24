@@ -30,7 +30,7 @@ const LOW_TRUST = 0.6;
 const RANK = { ALLOW: 0, SANITIZE: 1, REQUIRE_APPROVAL: 2, BLOCK: 3 };
 
 export function classifyPayload(payload, ctx = {}) {
-  const { vault = null, canaries = [], destinationTrust = 1, minPiiConfidence = 0.6 } = ctx;
+  const { vault = null, canaries = [], destinationTrust = 1, minPiiConfidence = 0.5 } = ctx;
   const findings = [];
 
   for (const c of findCanaries(payload, canaries)) {
