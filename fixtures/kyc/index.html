@@ -1,0 +1,36 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>e-KYC Registration (demo)</title>
+<style>body{font:16px system-ui;max-width:640px;margin:2rem auto;padding:0 1rem}label{display:block;margin:.8rem 0 .2rem;font-weight:600}input,select,textarea{width:100%;padding:.5rem;font:inherit;box-sizing:border-box}button{margin-top:1rem;padding:.6rem 1.2rem;font:inherit}.ok{background:#e7f6ec;padding:1rem;margin-top:1rem;border-radius:6px}.note{color:#555;font-size:.9rem}</style></head>
+<body>
+<h1>Citizen e-KYC Registration</h1>
+<p class="note">Demo portal. Nothing is sent anywhere; submitting only shows a confirmation on this page.</p>
+<form id="kyc" action="#" method="post" autocomplete="off">
+  <label for="fullname">Full name</label>
+  <input id="fullname" name="fullname" type="text" data-gt="full name" required>
+  <label for="dob">Date of birth</label>
+  <input id="dob" name="dob" type="text" placeholder="DD/MM/YYYY" data-gt="dob" required>
+  <label for="aadhaar">Aadhaar number</label>
+  <input id="aadhaar" name="aadhaar_no" type="text" inputmode="numeric" data-gt="aadhaar" required>
+  <label for="pan">PAN</label>
+  <input id="pan" name="pan_no" type="text" data-gt="pan" required>
+  <label for="mobile">Mobile number</label>
+  <input id="mobile" name="mobile" type="tel" data-gt="phone-in" required>
+  <label for="email">Email address</label>
+  <input id="email" name="email" type="email" data-gt="email" required>
+  <label for="address">Address</label>
+  <textarea id="address" name="address" rows="2" data-gt="address"></textarea>
+  <label for="pin">PIN code</label>
+  <input id="pin" name="pincode" type="text" data-gt="postal code">
+  <label><input type="checkbox" id="consent" name="consent" style="width:auto"> I consent to verification of the details above.</label>
+  <button type="submit" id="submit">Submit application</button>
+</form>
+<div id="done" class="ok" hidden role="status">Application received. Reference KYC-DEMO-0001. (Demo only: no data was transmitted.)</div>
+<script>
+document.getElementById("kyc").addEventListener("submit", function (e) {
+  e.preventDefault();
+  document.getElementById("done").hidden = false;
+  window.__kycSubmitted = true;
+});
+</script>
+</body></html>

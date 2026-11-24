@@ -22,8 +22,13 @@ const MUTATING = new Set(["type", "select", "submit", "upload", "download", "pas
 const NON_MUTATING = new Set(["wait", "scroll", "done", "ask_user", "extract"]);
 const APPROVAL_EVEN_AT_MEDIUM = new Set(["submit", "upload", "download"]);
 
-function sensitivity(text) {
-  const s = typeof text === "string" ? text : "";
+/** Scan only the part of a URL that can carry user data: path, query and fragment. The host is not personal data. */
+function urlParts(url) {
+  try { const u = new URL(url); return u.pathname + u.search + u.hash + (u.username || u.password ? ` ${u.username}:${u.password}` : ""); } catch { return String(url ?? ""); }
+}
+
+function sensitivity(text, { url = false } = {}) {
+  const s = typeof text === "string" ? (url ? urlParts(text) : text) : "";
   if (!s) return { pii: [], secrets: [], restricted: false };
   let decoded = s;
   try { decoded = decodeURIComponent(s); } catch { /* keep raw */ }
@@ -85,7 +90,7 @@ export function classifyAction(action, ctx = {}) {
       const href = node.href;
       if (href) {
         const off = offOrigin(href, ctx.pageOrigin);
-        const us = sensitivity(href);
+        const us = sensitivity(href, { url: true });
         if (node.downloadAttr || EXECUTABLE.test(href)) {
           bump("HIGH", "triggers a file download");
           if (EXECUTABLE.test(href)) bump("CRITICAL", "download is an executable file");
@@ -105,7 +110,7 @@ export function classifyAction(action, ctx = {}) {
     case "navigate":
     case "open_tab": {
       const url = a.url ?? a.literalValue;
-      const us = sensitivity(url);
+      const us = sensitivity(url, { url: true });
       const trust = ctx.destinationTrust ?? urlRisk(url, { pageOrigin: ctx.pageOrigin }).trust;
       bump("MEDIUM", "navigation");
       if (offOrigin(url, ctx.pageOrigin)) bump("HIGH", `navigates off-site (${host(url)})`);

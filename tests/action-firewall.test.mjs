@@ -65,6 +65,12 @@ test("navigate: same-origin ok; off-site needs approval; low trust or PII blocke
   assert.equal(d({ action: "navigate", url: "javascript:alert(1)" }).decision, "BLOCK");
 });
 
+test("a link or navigation to a loopback or IP host is not mistaken for data exfiltration", () => {
+  assert.equal(classifyAction({ action: "click" }, { pageOrigin: "http://127.0.0.1:4173", targetNode: { href: "http://127.0.0.1:4173/portal/fees.html", text: "Fees" } }).exfil, null);
+  assert.equal(classifyAction({ action: "navigate", url: "http://127.0.0.1:4173/portal/" }, { pageOrigin: "http://127.0.0.1:4173" }).decision, "ALLOW");
+  assert.equal(classifyAction({ action: "navigate", url: "http://127.0.0.1:4173/p?ip=192.168.1.5&pan=ABCPE1234F" }, { pageOrigin: "http://127.0.0.1:4173" }).decision, "BLOCK"); // data in the query still counts
+});
+
 test("search: plain query allowed; PII in query blocked", () => {
   assert.equal(d({ action: "search", query: "fee due date" }).decision, "ALLOW");
   const r = d({ action: "search", query: `status for ${AADHAAR}` });
