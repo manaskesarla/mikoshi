@@ -10,13 +10,16 @@ const APPROVAL_TIMEOUT_MS = 5 * 60 * 1000;
 let task = null;                       // { tabId, stop, pending }
 const approvals = new Map();           // id -> resolve
 let recent = [];
+let lastSent = null;
 let uid = 0;
 
 chrome.sidePanel?.setPanelBehavior?.({ openPanelOnActionClick: true }).catch(() => {});
 
 function broadcast(event) {
   recent = recent.concat([event]).slice(-200);
-  store.appendLog(event).catch(() => {});
+  // the final answer may contain real values put back for the user: show it, never store it
+  const stored = event.phase === "result" ? { ts: event.ts, phase: "result", status: event.status, detail: "" } : event;
+  store.appendLog(stored).catch(() => {});
   chrome.runtime.sendMessage({ type: "MIKOSHI_EVENT", event }).catch(() => {});
 }
 
@@ -42,7 +45,7 @@ async function startTask({ goal, mode, tabId }) {
   if (!tab || !tabsApi.isWebUrl(tab.url || "")) throw new Error("open the web page you want Mikoshi to work on first");
   const settings = await store.getSettings();
   const profile = await store.profileForAgent();
-  task = { tabId: tab.id, stop: false, pending: null };
+  task = { tabId: tab.id, stop: false, pending: null, lastPayload: null };
   const keepAlive = setInterval(() => chrome.runtime.getPlatformInfo(() => {}), 20000);
 
   const send = (msg) => chrome.tabs.sendMessage(task.tabId, msg);
@@ -68,6 +71,7 @@ async function startTask({ goal, mode, tabId }) {
     approve: askUser,
     profile: () => profile,
     emit: broadcast,
+    onSend: (payload) => { task.lastPayload = JSON.stringify({ ...payload, screenshot: payload.screenshot ? `[redacted image, ${payload.screenshot.length} chars]` : null }, null, 2); },
     settings: { ...settings, canaries: [] },
     now: () => Date.now(),
     shouldStop: () => task?.stop === true,
@@ -77,7 +81,7 @@ async function startTask({ goal, mode, tabId }) {
   createOrchestrator(deps)({ goal, mode })
     .then((outcome) => broadcast({ ts: Date.now(), phase: "result", status: outcome.status, detail: outcome.summary || outcome.reason || "", outcome }))
     .catch((e) => broadcast({ ts: Date.now(), phase: "result", status: "failed", detail: String(e?.message || e).slice(0, 120) }))
-    .finally(() => { clearInterval(keepAlive); task = null; });
+    .finally(() => { clearInterval(keepAlive); lastSent = task?.lastPayload ?? lastSent; task = null; });
 }
 
 chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
@@ -87,7 +91,7 @@ chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
       case "MIKOSHI_START_TASK": await startTask(msg); return { ok: true };
       case "MIKOSHI_STOP": if (task) { task.stop = true; for (const resolve of approvals.values()) resolve("stop"); } return { ok: true };
       case "MIKOSHI_APPROVAL_RES": approvals.get(msg.id)?.(["approve", "deny", "stop"].includes(msg.decision) ? msg.decision : "deny"); return { ok: true };
-      case "MIKOSHI_GET_STATE": return { ok: true, running: !!task, events: recent, pending: task?.pending ?? null };
+      case "MIKOSHI_GET_STATE": return { ok: true, running: !!task, events: recent, pending: task?.pending ?? null, lastPayload: task?.lastPayload ?? lastSent };
       case "MIKOSHI_TEST_CONNECTION": return { ok: true, health: await checkHealth(await store.getSettings()) };
       default: return { ok: false, error: "unknown message" };
     }

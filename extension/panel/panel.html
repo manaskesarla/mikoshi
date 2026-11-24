@@ -1,1 +1,50 @@
-<!doctype html><html lang="en"><head><meta charset="utf-8"><title>Mikoshi</title></head><body><h1>Mikoshi</h1><p>Panel loading…</p></body></html>
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Mikoshi</title><link rel="stylesheet" href="panel.css"></head>
+<body>
+<header><h1>Mikoshi</h1><p class="tag">Reads your page here. Hides your details before asking the AI.</p></header>
+<nav role="tablist" aria-label="Sections">
+  <button role="tab" id="tab-task" aria-controls="view-task" aria-selected="true">Task</button>
+  <button role="tab" id="tab-profile" aria-controls="view-profile" aria-selected="false">Profile</button>
+  <button role="tab" id="tab-settings" aria-controls="view-settings" aria-selected="false">Settings</button>
+</nav>
+
+<main>
+<section id="view-task" role="tabpanel" aria-labelledby="tab-task">
+  <label for="goal">What should Mikoshi do on this page?</label>
+  <textarea id="goal" rows="3" placeholder="e.g. Fill my KYC form  /  Tell me the tuition fee due date"></textarea>
+  <fieldset><legend>Mode</legend>
+    <label class="inline"><input type="radio" name="mode" value="act" checked> Act (fill and click)</label>
+    <label class="inline"><input type="radio" name="mode" value="read_only"> Read only</label>
+  </fieldset>
+  <label for="approvalMode">Ask me</label>
+  <select id="approvalMode"><option value="risky">before risky actions</option><option value="every">before every action</option></select>
+  <div class="row"><button id="start" class="primary">Start</button><button id="stop" disabled>Stop</button></div>
+  <p id="status" role="status" aria-live="polite">Ready.</p>
+  <div id="approval" class="card" hidden aria-live="assertive"></div>
+  <div id="result" class="card ok" hidden></div>
+  <h2>Activity</h2>
+  <ol id="activity" aria-label="Live activity"></ol>
+  <details id="sent"><summary>What was sent to the AI</summary><pre id="sentBody">Nothing sent yet.</pre></details>
+</section>
+
+<section id="view-profile" role="tabpanel" aria-labelledby="tab-profile" hidden>
+  <p class="note">Stored only in this browser. The AI never sees these values, only placeholders such as [PAN_1]. Stored unencrypted.</p>
+  <form id="profileForm" novalidate></form>
+  <div class="row"><button id="saveProfile" class="primary">Save profile</button><button id="exportProfile">Export</button><label class="button" for="importProfile">Import</label><input id="importProfile" type="file" accept="application/json" hidden></div>
+  <p id="profileMsg" role="status"></p>
+  <hr><button id="wipe" class="danger">Delete all Mikoshi data</button>
+</section>
+
+<section id="view-settings" role="tabpanel" aria-labelledby="tab-settings" hidden>
+  <label for="serverUrl">Server address</label><input id="serverUrl" type="url">
+  <label for="apiKey">Server key (optional)</label><input id="apiKey" type="password" autocomplete="off">
+  <label for="stepCap">Maximum steps per task</label><input id="stepCap" type="number" min="1" max="50">
+  <label class="inline"><input type="checkbox" id="useScreenshot"> Send a redacted screenshot to the AI (needs the OCR files: <code>npm run fetch:vendor</code>)</label>
+  <label for="trusted">Trusted sites (one origin per line)</label><textarea id="trusted" rows="3" placeholder="https://portal.example"></textarea>
+  <div class="row"><button id="saveSettings" class="primary">Save</button><button id="testConn">Test connection</button></div>
+  <p id="settingsMsg" role="status"></p>
+</section>
+</main>
+<script type="module" src="panel.js"></script>
+</body></html>

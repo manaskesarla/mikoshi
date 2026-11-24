@@ -228,3 +228,13 @@ test("validatePlan: shape checks", () => {
   assert.equal(ok(Array(6).fill({ action: "wait" })).ok, false);
   assert.equal(validatePlan({}, { skeleton, vault }).ok, false);
 });
+
+test("onSend receives exactly the payload that goes to the server", async () => {
+  const seen = [];
+  const h = harness({ api: () => ({ actions: [{ action: "done" }], done: true, summary: "ok" }) });
+  const deps = { perceive: async () => FORM_PAGE(), vision: async () => ({ image: null, verify: { ok: true } }), api: async (p) => { h.sent.push(p); return { actions: [{ action: "done" }], done: true, summary: "ok" }; }, execute: async () => ({ ok: true }), approve: async () => "approve", profile: () => PROFILE, emit() {}, onSend: (p) => seen.push(JSON.stringify(p)), now: () => 0 };
+  await createOrchestrator(deps)({ goal: "x" });
+  assert.equal(seen.length, 1);
+  assert.equal(seen[0], JSON.stringify(h.sent[0]));
+  assert.ok(!seen[0].includes(PAN));
+});

@@ -13,6 +13,7 @@
 //   profile()             -> { category: value }                 autofill-enabled profile entries only
 //   emit(event)           -> void
 //   settings              -> { approvalMode: "risky"|"every", stepCap, wallClockMs, domOnlyIfOcrFails, maxBlocks, canaries, trustedOrigins }
+//   onSend(payload)       -> void   called with the exact payload about to be sent (for the "what was sent" view)
 //   now()                 -> ms
 //   shouldStop()          -> boolean
 
@@ -84,6 +85,7 @@ export function createOrchestrator(deps) {
         const answer = await deps.approve({ kind: "egress", reasons: egress.result.reasons, risk: "HIGH" });
         if (answer !== "approve") return finish(answer === "stop" ? "stopped" : "blocked", { reason: "you declined to send this data" });
       }
+      deps.onSend?.(egress.payload);
       emit({ step, phase: "egress", status: "ok", counts, detail: `${egress.result.decision.toLowerCase()}, ${JSON.stringify(egress.payload).length} bytes` });
 
       // 5. ask the model
