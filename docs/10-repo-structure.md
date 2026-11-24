@@ -5,52 +5,32 @@ Layout is a proposal **[ASSUMPTION]**.
 
 ```
 Mikoshi/
-├── README.md                    # short; links to docs/
-├── LICENSE                      # decision pending (Q9)
-├── package.json                 # scripts only; no runtime deps in MVP
-├── .gitignore
-├── docs/                        # these planning docs
-├── extension/                   # MV3 extension
+├── README.md                    # setup, run, tests, honest limits
+├── package.json                 # scripts only; no runtime dependencies
+├── docs/                        # design docs; 14-build-status.md is the current state
+├── extension/                   # Chrome MV3 extension
 │   ├── manifest.json
-│   ├── background/              # service worker (ES module)
-│   │   ├── index.js             # wiring, message routing
-│   │   ├── orchestrator.js      # state machine / loop
-│   │   ├── egress.js            # the single egress function
-│   │   ├── vault-store.js       # vault load/save in chrome.storage
-│   │   ├── api-client.js        # talks to FastAPI only
-│   │   └── tabs.js              # navigate / open_tab / tab tracking
-│   ├── content/
-│   │   ├── perceiver.js         # skeleton + text + adversarial scan
-│   │   ├── executor.js          # type/click/select/scroll/submit/search/extract
-│   │   └── loader.js            # dynamic import of lib/ modules
-│   ├── offscreen/
-│   │   ├── offscreen.html
-│   │   └── offscreen.js         # OCR + redaction + verify
-│   ├── panel/                   # side panel UI
-│   │   ├── panel.html · panel.css · panel.js
-│   │   └── components/          # approvals.js · activity.js · profile.js · settings.js
-│   ├── lib/                     # privacy-core: ONE copy, ESM
-│   │   ├── pii-rules.mjs  pii-config.mjs  pii-checksums.mjs
-│   │   ├── secret-scanner.mjs  sensitive-fields.mjs  field-classifier.mjs
-│   │   ├── label-assoc.mjs  dlp-heuristics.mjs  dlp-sanitizer.mjs
-│   │   ├── tokenizer.mjs  redact.mjs  merge.mjs  redaction-verify.mjs
-│   │   ├── security-policy.mjs  egress-guard.mjs  canary.mjs
-│   │   ├── adversarial-guard.mjs  action-firewall.mjs  url-risk.mjs   # url-risk is NEW
-│   │   └── dpdp-audit.mjs
-│   └── vendor/                  # gitignored; filled by scripts/fetch-vendor.mjs
-├── server/
-│   ├── main.py  schema.py  vlm.py
-│   ├── prompts/system.md
-│   ├── requirements.txt  .env.example
-│   └── tests/                   # pytest
-├── fixtures/                    # demo + hostile pages
-│   ├── kyc/ …                   # demo A
-│   ├── portal/ …                # demo B (multi-page)
-│   └── hostile/ …
-├── security-lab/                # generated adversarial pages (subset)
-├── eval/                        # benchmarks (bench/, screens/)
+│   ├── background/              # service worker (ES modules)
+│   │   ├── index.js             # wires Chrome APIs to the orchestrator
+│   │   ├── orchestrator.js      # the agent loop (all I/O injected)
+│   │   ├── egress.js            # the single egress door
+│   │   ├── response-validation.js
+│   │   ├── api-client.js        # the only module that talks to the server
+│   │   ├── storage.js  tabs.js  vision.js
+│   ├── content/                 # page code, injected on demand
+│   │   ├── loader.js  main.mjs  perceiver.mjs  executor.mjs
+│   ├── panel/                   # side panel: panel.html  panel.css  panel.js
+│   ├── lib/                     # privacy core: ONE copy, ESM
+│   │   ├── pii-checksums  pii-config  pii-rules  secret-scanner  sensitive-fields
+│   │   ├── field-classifier  label-assoc  dlp-heuristics  dlp-sanitizer  tokenizer
+│   │   ├── payload-walk  canary  security-policy  egress-guard  adversarial-guard
+│   │   ├── url-risk  action-firewall  merge  redact  redaction-verify   (all .mjs)
+│   └── vendor/                  # gitignored; OCR assets (not yet wired, see docs/14)
+├── server/                      # main.py  schema.py  vlm.py  prompts/  tests/
+├── fixtures/                    # kyc/  portal/  hostile/
+├── eval/bench/                  # seeded detection benchmark
 ├── tests/                       # node --test, mirrors extension/lib names
-└── scripts/                     # fetch-vendor, serve, build-manifest (if needed), aggregate
+└── scripts/                     # serve.mjs  browser-check.mjs  e2e.mjs
 ```
 
 ## Rules

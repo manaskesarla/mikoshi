@@ -2,7 +2,7 @@
 
 Privacy-first AI browser agent. Team NOVA, wHACKiest 2026 (online ideathon, 26–27 Nov 2026), track **"Beyond the Browser"**.
 
-These docs are the build plan. They contain **no code**. Read them in order; `09-implementation-plan.md` is the one you execute.
+These docs are the design and build plan, plus a status page (`14-build-status.md`) that records what has actually been built and verified. Read them in order; `09-implementation-plan.md` is the one you execute.
 
 ## How to read the evidence tags
 
@@ -32,6 +32,7 @@ Every non-trivial statement in these docs carries its origin, so nothing here is
 | 11 | [testing-and-evaluation](11-testing-and-evaluation.md) | Test strategy, metrics, thresholds. |
 | 12 | [demo-and-pitch](12-demo-and-pitch.md) | Demo script, fallback plan, judge Q&A. |
 | 13 | [open-questions](13-open-questions.md) | Unresolved items and risk register. **Answer these first.** |
+| 14 | [build-status](14-build-status.md) | What is built, how it was verified, and what is not done. |
 
 ## One-paragraph summary
 
