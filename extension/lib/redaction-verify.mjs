@@ -6,7 +6,7 @@
 //   4. re-checks. Still leaking, or OCR failed -> ok:false. The caller must NOT send.
 // Bounded to exactly one extra pass. OCR is injected so this module stays pure.
 //
-//   verifyRedaction({ canvas, ocr, minConfidence? }) -> Promise<{
+//   verifyRedaction({ canvas, ocr, minConfidence?, extraDetect? })   extraDetect(lines) -> [{ category, box }] -> Promise<{
 //     ok, passes, reason?: "REDACTION_FAILED" | "OCR_FAILED", residual: [{ category }], added }>
 // `ocr(canvas)` resolves to lines: [{ text, bbox: { x0, y0, x1, y1 } }].
 // Results never contain recognised text.
@@ -18,14 +18,14 @@ import { redactCanvas } from "./redact.mjs";
 const PARANOID = 0.4;
 
 /** char span inside a line -> pixel box, assuming roughly even character width */
-function spanToBox(line, start, end) {
+export function spanToBox(line, start, end) {
   const { x0, y0, x1, y1 } = line.bbox;
   const n = Math.max(1, (line.text || "").length);
   const w = x1 - x0;
   return { x0: x0 + (w * start) / n, x1: x0 + (w * end) / n, y0, y1 };
 }
 
-function residualBoxes(lines, minConfidence) {
+function residualBoxes(lines, minConfidence, extraDetect) {
   const out = [];
   for (const line of lines || []) {
     const text = line?.text || "";
@@ -33,16 +33,17 @@ function residualBoxes(lines, minConfidence) {
     for (const h of detectPII(text, { minConfidence })) out.push({ category: h.category, box: spanToBox(line, h.start, h.end) });
     for (const s of scanSecrets(text, { minConfidence })) out.push({ category: "secret", box: spanToBox(line, s.start, s.end) });
   }
+  if (extraDetect) for (const r of extraDetect(lines) || []) out.push(r); // e.g. values the user's vault already knows
   return out;
 }
 
-export async function verifyRedaction({ canvas, ocr, minConfidence = PARANOID }) {
+export async function verifyRedaction({ canvas, ocr, minConfidence = PARANOID, extraDetect = null }) {
   let added = 0;
   let residual = [];
   for (let pass = 1; pass <= 2; pass++) {
     let lines;
     try { lines = await ocr(canvas); } catch { return { ok: false, passes: pass, reason: "OCR_FAILED", residual: [], added }; }
-    residual = residualBoxes(lines, minConfidence);
+    residual = residualBoxes(lines, minConfidence, extraDetect);
     if (!residual.length) return { ok: true, passes: pass, residual: [], added };
     if (pass === 2) break;
     // widen the box more than the first pass did: the first box was evidently too small

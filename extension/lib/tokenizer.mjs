@@ -106,6 +106,9 @@ export class Vault {
     return out;
   }
 
+  /** LOCAL USE ONLY (e.g. the OCR redactor): every known value. Never send this anywhere. */
+  knownValues() { return [...this._byToken.values()].map((r) => ({ value: r.value, category: r.category })); }
+
   /** Safe to transmit: token -> category. Never values. */
   exportContext() {
     const map = {};

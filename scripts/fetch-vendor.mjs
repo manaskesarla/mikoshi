@@ -14,10 +14,11 @@ const LOCK = join(VENDOR, "vendor.lock.json");
 const REGISTRY = "https://registry.npmjs.org";
 const PACKAGES = [
   { name: "tesseract.js", pick: (f) => /^package\/dist\/(tesseract\.min\.js|worker\.min\.js)$/.test(f) },
-  { name: "tesseract.js-core", pick: (f) => /^package\/tesseract-core(-simd)?-lstm\.wasm(\.js)?$/.test(f) },
+  { name: "tesseract.js-core", follow: "tesseract.js", pick: (f) => /^package\/tesseract-core(-relaxedsimd|-simd)?-lstm\.wasm(\.js)?$/.test(f) },
   { name: "@tesseract.js-data/eng", pick: (f) => /^package\/4\.0\.0_best_int\/eng\.traineddata\.gz$/.test(f) },
 ];
 
+const resolved = {};
 const lock = existsSync(LOCK) ? JSON.parse(readFileSync(LOCK, "utf8")) : {};
 mkdirSync(VENDOR, { recursive: true });
 const work = join(tmpdir(), `mikoshi-vendor-${process.pid}`);
@@ -27,8 +28,11 @@ async function json(url) { const r = await fetch(url); if (!r.ok) throw new Erro
 
 for (const pkg of PACKAGES) {
   const enc = pkg.name.replace("/", "%2f");
-  const version = lock[pkg.name]?.version ?? (await json(`${REGISTRY}/${enc}/latest`)).version;
+  // `follow`: take the version the engine itself declares, because the registry's "latest" tag can lag behind it
+  const declared = pkg.follow && resolved[pkg.follow]?.dependencies?.[pkg.name]?.replace(/^[\^~]/, "");
+  const version = lock[pkg.name]?.version ?? declared ?? (await json(`${REGISTRY}/${enc}/latest`)).version;
   const meta = await json(`${REGISTRY}/${enc}/${version}`);
+  resolved[pkg.name] = meta;
   const { tarball, integrity } = meta.dist;
   const res = await fetch(tarball);
   if (!res.ok) throw new Error(`${tarball} -> HTTP ${res.status}`);

@@ -3,7 +3,7 @@
 // exactly what left the browser.
 //   node scripts/e2e.mjs        (needs Chrome and server/.venv)
 import { spawn } from "node:child_process";
-import { mkdtempSync, rmSync } from "node:fs";
+import { mkdtempSync, rmSync, cpSync, readFileSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { createServer } from "node:http";
@@ -53,7 +53,14 @@ const ev = async (sid, expr) => { const r = await cdp("Runtime.evaluate", { expr
 const targets = async () => (await cdp("Target.getTargets")).result.targetInfos;
 
 try {
-  const loaded = await cdp("Extensions.loadUnpacked", { path: ROOT + "extension" });
+  // A script cannot click Chrome's permission prompt, so the test loads a throwaway copy whose manifest already
+  // holds <all_urls>. In real use screenshots are opt-in (Settings) and the permission is requested from the user.
+  const extCopy = join(profileDir, "extension");
+  cpSync(ROOT + "extension", extCopy, { recursive: true });
+  const man = JSON.parse(readFileSync(join(extCopy, "manifest.json"), "utf8"));
+  man.host_permissions = [...new Set([...man.host_permissions, "<all_urls>"])];
+  writeFileSync(join(extCopy, "manifest.json"), JSON.stringify(man, null, 2));
+  const loaded = await cdp("Extensions.loadUnpacked", { path: extCopy });
   if (loaded.error) throw new Error("Extensions.loadUnpacked failed: " + JSON.stringify(loaded.error));
   const sw = await until(async () => (await targets()).find((t) => t.type === "service_worker" && t.url.startsWith("chrome-extension://") && t.url.endsWith("/background/index.js")), 8000, "Mikoshi service worker").catch(async (e) => { console.log("targets seen:", (await targets()).map((t) => `${t.type} ${t.url}`)); throw e; });
   if (process.env.DEBUG_E2E) console.log("targets:", (await targets()).map((t) => `${t.type} ${t.url}`));
@@ -148,6 +155,23 @@ try {
   check("Portal: the hidden injection made the page count as hostile (clicks needed approval)", b.approvals.some((r) => (r.reasons || []).some((x) => /injection/i.test(x))), JSON.stringify(b.approvals).slice(0, 200));
   check("Portal: nothing typed in read-only mode", !b.events.some((e) => e.phase === "execute" && /^type/.test(e.detail || "")));
   check("Portal: nothing personal from the profile was sent", RAW.every((r) => !bodies.join("\n").includes(r)));
+  // ---------- Demo A again, with redacted screenshots enabled (real OCR in the offscreen document)
+  await ui(`await chrome.storage.local.set({'mikoshi:settings': {serverUrl: 'http://127.0.0.1:${PROXY}', useScreenshot: true}}); return true`);
+  await ev(kyc.sid, `location.reload(); return true`); await sleep(1200);
+  bodies.length = 0;
+  const c = await run(`${FX}/kyc/`, "Fill my KYC form", "act");
+  const cRes = c.events.find((e) => e.phase === "result");
+  check("Screenshots: task finished with OCR redaction in the loop", cRes.status === "done", JSON.stringify(cRes).slice(0, 300));
+  check("Screenshots: the log reports masked regions", c.events.some((e) => e.phase === "verify" && /\d+ regions masked/.test(e.detail || "")), JSON.stringify(c.events.filter((e) => e.phase === "verify")).slice(0, 300));
+  const shots = bodies.map((b) => JSON.parse(b)).filter((b) => b.screenshot);
+  check("Screenshots: the server received redacted JPEGs", shots.length >= 2 && shots.every((b) => b.screenshot.startsWith("data:image/jpeg")), String(shots.length));
+  const wire2 = bodies.join("\n").replace(/"screenshot":"[^"]*"/g, '"screenshot":"<img>"');
+  check("Screenshots: text in the same requests is still free of raw values", RAW.every((r) => !wire2.includes(r)));
+  const last = shots[shots.length - 1];
+  const pixels = await ev(kyc.sid, `const img=new Image(); img.src=${JSON.stringify(last.screenshot)}; await img.decode(); const cv=document.createElement('canvas'); cv.width=img.width; cv.height=img.height; const x=cv.getContext('2d'); x.drawImage(img,0,0); const k=img.width/innerWidth; const lum=(id)=>{const r=document.getElementById(id).getBoundingClientRect(); const d=x.getImageData(Math.round(r.x*k)+6,Math.round(r.y*k)+4,Math.max(1,Math.round(r.width*k)-12),Math.max(1,Math.round(r.height*k)-8)).data; let s=0,n=0; for(let i=0;i<d.length;i+=4){s+=(d[i]+d[i+1]+d[i+2])/3;n++} return Math.round(s/n)}; return {aadhaar:lum('aadhaar'), pan:lum('pan'), consentLabel:lum('address')}`);
+  check("Screenshots: the typed Aadhaar and PAN fields are solid black in the image the server got", pixels.aadhaar < 30 && pixels.pan < 30, JSON.stringify(pixels));
+  check("Screenshots: ordinary parts of the page are not blacked out", pixels.consentLabel > 150, JSON.stringify(pixels));
+
   const storedLog = JSON.stringify(await ui(`return (await chrome.storage.local.get('mikoshi:log'))['mikoshi:log']`));
   check("storage: the persisted activity log (both demos) holds no raw personal values", storedLog.length > 50 && RAW.every((r) => !storedLog.includes(r)), storedLog.slice(0, 120));
 } catch (e) { console.log("ERROR", e.stack || e.message); failed++; }

@@ -64,13 +64,14 @@ export function createOrchestrator(deps) {
 
       // 2. vision: screenshot -> redact -> recheck. Fail closed.
       let image = null;
+      let vis = null;
       try {
-        const v = await deps.vision(page);
+        const v = vis = await deps.vision(page, { known: vault.knownValues() });
         if (v.verify?.ok) image = v.image;
         else if (v.verify?.reason === "OCR_FAILED" && settings.domOnlyIfOcrFails) emit({ step, phase: "redact", status: "ok", detail: "OCR unavailable; continuing DOM-only (setting enabled)" });
-        else return stop(v.verify?.reason || "redaction could not be verified", "verify");
+        else return stop(`${v.verify?.reason || "redaction could not be verified"}${v.verify?.detail ? `: ${v.verify.detail}` : ""}`, "verify");
       } catch (e) { return stop(`redaction failed (${e.message})`, "verify"); }
-      emit({ step, phase: "verify", status: "ok", detail: image ? "screenshot redacted and rechecked" : "no screenshot sent" });
+      emit({ step, phase: "verify", status: "ok", detail: image ? `screenshot redacted and rechecked${vis?.stats ? ` (${vis.stats.boxes} regions masked)` : ""}` : "no screenshot sent" });
 
       // 3. sanitize everything that will leave
       const { skeleton, counts } = sanitizeSkeleton(page.skeleton, vault);

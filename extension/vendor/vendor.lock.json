@@ -8,12 +8,14 @@
     ]
   },
   "tesseract.js-core": {
-    "version": "6.1.2",
-    "integrity": "sha512-pv4GjmramjdObhDyR1q85Td8X60Puu/lGQn7Kw2id05LLgHhAcWgnz6xSdMCSxBMWjQDmMyDXPTC2aqADdpiow==",
+    "version": "7.0.0",
+    "integrity": "sha512-WnNH518NzmbSq9zgTPeoF8c+xmilS8rFIl1YKbk/ptuuc7p6cLNELNuPAzcmsYw450ca6bLa8j3t0VAtq435Vw==",
     "files": [
       "tesseract-core-lstm.wasm.js",
+      "tesseract-core-relaxedsimd-lstm.wasm.js",
       "tesseract-core-simd-lstm.wasm.js",
       "tesseract-core-lstm.wasm",
+      "tesseract-core-relaxedsimd-lstm.wasm",
       "tesseract-core-simd-lstm.wasm"
     ]
   },

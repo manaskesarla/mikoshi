@@ -137,10 +137,15 @@ async function loadSettings() {
   $("useScreenshot").checked = s.useScreenshot; $("trusted").value = s.trustedOrigins.join("\n"); $("approvalMode").value = s.approvalMode;
 }
 $("saveSettings").addEventListener("click", async () => {
+  // Chrome only allows capturing a page with broad host access, so screenshots are opt-in: ask first, while the click still counts as a user gesture
+  let shots = $("useScreenshot").checked, note = "";
+  if (shots && !(await chrome.permissions.contains({ origins: ["<all_urls>"] }))) {
+    if (!(await chrome.permissions.request({ origins: ["<all_urls>"] }))) { shots = false; $("useScreenshot").checked = false; note = " Screenshots were not enabled because the browser permission was not granted."; }
+  }
   const origins = $("trusted").value.split("\n").map((x) => x.trim()).filter(Boolean);
   try { origins.forEach((o) => { if (new URL(o).origin !== o.replace(/\/$/, "")) throw new Error(); }); } catch { $("settingsMsg").textContent = "Trusted sites must be origins like https://portal.example"; return; }
-  await saveSettings({ serverUrl: $("serverUrl").value.trim(), apiKey: $("apiKey").value, stepCap: Math.max(1, Math.min(50, +$("stepCap").value || 12)), useScreenshot: $("useScreenshot").checked, trustedOrigins: origins });
-  $("settingsMsg").textContent = "Saved.";
+  await saveSettings({ serverUrl: $("serverUrl").value.trim(), apiKey: $("apiKey").value, stepCap: Math.max(1, Math.min(50, +$("stepCap").value || 12)), useScreenshot: shots, trustedOrigins: origins });
+  $("settingsMsg").textContent = `Saved.${note}`;
 });
 $("testConn").addEventListener("click", async () => {
   $("settingsMsg").textContent = "Testing…";
