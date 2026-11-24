@@ -51,6 +51,12 @@ test("pan: valid structure is detected, invalid holder type needs context", () =
   assert.deepEqual(cats("PAN number ABCDE1234F"), ["pan"]);
 });
 
+test("negative context suppresses look-alike codes, but explicit context wins", () => {
+  assert.deepEqual(cats("Invoice ABCPE1234F generated"), []);
+  assert.deepEqual(cats("Order ref KA 01 AB 1234 dispatched"), []);
+  assert.deepEqual(cats("Invoice for PAN ABCPE1234F"), ["pan"]);
+});
+
 test("email and upi", () => {
   assert.deepEqual(cats("mail me at asha.rao+x@example.co.in"), ["email"]);
   assert.deepEqual(cats("pay asha@okaxis now"), ["upi-vpa"]);

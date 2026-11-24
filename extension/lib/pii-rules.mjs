@@ -127,7 +127,10 @@ function detectRegex(t) {
       } else if (rule.validate) {
         if (rule.validate(m[0])) c = rule.validBase ?? c;
       }
-      if (rule.ctxBoost && hasCtx(t, s, e, rule.category)) c += rule.ctxBoost;
+      if (rule.ctxBoost) {
+        if (hasCtx(t, s, e, rule.category)) c += rule.ctxBoost;
+        else if (hasNeg(t, s, e)) c -= 0.45; // "Invoice AAAPA1234A": shaped like a PAN, but labelled as something else
+      }
       out.push({ category: rule.category, start: s, end: e, confidence: c, source: "regex" });
     }
   }
